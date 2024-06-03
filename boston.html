@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/styles.css">
+    <title>Document</title>
+</head>
+    <body style="position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Copperplate', fantasy;
+    color: #0c4dc7;">
+        <a href="/"><img src="../static/home_icon.png"></a>
+        <center>
+            <canvas id="myCanvas" width="620" height="320"></canvas>
+            <div id="buttons">
+              <input type="button" id="play" value="Play" onclick="play()">
+              <input type="button" id="pause" value="Pause" onclick="pause()">
+              <input type="button" id="stepforward" value="Step >>" onclick="stepForward()">
+              <input type="button" id="reset" value="Reset" onclick="reset()">
+            </div>
+                 <div>Source velocity (in units of the speed of sound)</div>
+             <div id="slider1">
+               -2 <input type="range" id="sourceV" min="-2" max="2" value="0" step="0.1" oninput="showSourceV(this.value)" onchange="showSourceV(this.value)"> +2
+        <div id="initialSourceV">2</div>
+            </div>
+            <div>Source position (m)</div>
+             <div id="slider2">
+               -50 <input type="range" id="sourceX" min="-50" max="50" value="-20" step="1" oninput="showSourceX(this.value)" onchange="showSourceX(this.value)"> +50
+        <div id="initialSourceX">-50</div>
+            </div>
+                 <div>Observer velocity (in units of the speed of sound)</div>
+             <div id="slider3">
+               -2 <input type="range" id="observerV" min="-2" max="2" value="0" step="0.1" oninput="showObserverV(this.value)" onchange="showObserverV(this.value)"> +2
+        <div id="initialObserverV">0</div>
+            </div>
+            <div>Observer position (m)</div>
+             <div id="slider4">
+               -50 <input type="range" id="observerX" min="-50" max="50" value="20" step="1" oninput="showObserverX(this.value)" onchange="showObserverX(this.value)"> +50
+        <div id="initialObserverX">50</div>
+            </div>
+        
+        
+        </center>
+        
+          <script>
+        
+        // Simulation first posted on 1-27-2017 - written by Andrew Duffy
+        
+              function showSourceV(newSourceV)
+              {
+                     //get the element
+                     var display = document.getElementById("initialSourceV");
+                     //show the amount
+                     display.innerHTML=newSourceV;
+                     vSource = Number(newSourceV);
+                     reset();
+             }
+        
+               function showSourceX(newSourceX)
+              {
+                     //get the element
+                     var display = document.getElementById("initialSourceX");
+                     //show the amount
+                     display.innerHTML=newSourceX;
+                     xSource = Number(newSourceX);
+                     reset();
+             }
+        
+              function showObserverV(newObserverV)
+              {
+                     //get the element
+                     var display = document.getElementById("initialObserverV");
+                     //show the amount
+                     display.innerHTML=newObserverV;
+                     vObserver = Number(newObserverV);
+                     reset();
+             }
+        
+               function showObserverX(newObserverX)
+              {
+                     //get the element
+                     var display = document.getElementById("initialObserverX");
+                     //show the amount
+                     display.innerHTML=newObserverX;
+                     xObserver = Number(newObserverX);
+                     reset();
+             }
+        
+        
+        
+              function play() {
+                window.clearTimeout(timer);
+                runFlag = 1;
+                runMotion();
+        
+              }
+        
+              function pause() {
+                window.clearTimeout(timer);
+                runFlag = 0;
+        
+              }
+        
+              function stepForward() {
+                window.clearTimeout(timer);
+                runFlag = 1;
+                drawMotion();
+        
+              }
+        
+              function stepBack() {
+                window.clearTimeout(timer);
+                index = index-2;
+                if (index < -1) index = -1;
+                time = index/20;
+                xPos = xBase;
+                runFlag = 1;
+                drawMotion();
+        
+              }
+        
+        
+              function reset() {
+                window.clearTimeout(timer);
+                index = -1;
+                time = 0.0;
+                counter = -1;
+                waveIndex = 0;
+                wave[0].x = xSource;
+                wave[0].t = 0.0;
+                xPos = xBase;
+                runFlag = 1;
+                runMotion();
+        
+              }
+        
+        
+              var canvas = document.getElementById("myCanvas");
+              var context = canvas.getContext("2d");
+              var index = -1;
+              var xBase = 80;
+              var xBase2 = 80;
+              var yBase = 30;
+              var yBase2 = 45;
+              var xInit = 37;
+              var graphType = 1;
+              var graphTitle = 'The Doppler effect';
+              var yAxisTitle = 'y (m)';
+              var slope = 0.4;
+              var yIncrement = 10;
+              var yNumDecimals = 0;
+              var xIncrement = 10;
+              var xNumDecimals = 0;
+              var yStart = yBase+160;
+              var plotColor = '#ff00ff';
+        
+              var vSource = 0.0;
+              var xSource = -20.0;
+              var vObserver = 0.0;
+              var xObserver = +20.0;
+              var x1 = xSource;
+              var x2 = xObserver;
+              var sourceColor = "#55f";
+              var vSound = 50;
+        
+              var nWaves = 51;  // number of waves
+              var wave = new Array(nWaves);
+              for (var i=0; i<nWaves; i++) {
+                 wave[i] = {};
+                 wave[i].x = xSource;   // x position when emitted
+                 wave[i].t = 0.0;   // time emitted
+              }
+              counter = -1;
+              waveIndex = 0;
+              waveTime = 0.1;
+              var maxCount = 12;
+              var maxRadius = 100;
+              var waveRadius = 0;
+        
+              var radius = 6;
+              var time = 0.0;
+              var graphY = 6;
+              var graphX = 10;
+              var timer;
+              var runFlag = 1;
+        
+              drawMotion();
+        
+            function drawMotion() {
+        
+          //    console.log("In the drawMotion function, with runFlag = " + runFlag );
+        
+              if ((x1 < -50) || (x1 > 50))  {
+                index = -1;
+                counter = -1;
+                waveIndex = 0;
+                wave[0].x = xSource;
+                wave[0].t = 0.0;
+              }
+        
+          //    console.log("In the drawMotion function, with runFlag = " + runFlag + " xPos = " + xPos);
+        
+              if (runFlag == 1) {    //      run if runFlag equal 1, not if equal 0
+                // clear
+                context.clearRect(0, 0, canvas.width, canvas.height);
+        
+                index = index + 1;
+                time = index/100.0;
+                counter = counter + 1;
+        
+        
+                // set background color for the entire thing
+                   context.fillStyle = "#ffd";
+                   context.fillRect(0, 0, canvas.width, canvas.height);
+        
+                // set background color for the graph
+        //           context.fillStyle = "#eff";
+        //           context.fillRect(xBase, yBase, 400, 160);
+        
+                // set line color
+                   context.strokeStyle = '#999';
+                   context.lineWidth = 3;
+        
+                   var axisLabel = '';
+                   var axisValue = 0;
+        
+                 // vertical grid lines
+                 for (var i = 0; i <= graphX; i++) {
+                   context.beginPath();
+                   context.moveTo(xBase2+40*i, yBase2);
+                   context.lineTo(xBase2+40*i, yBase2+40*graphY/2+10);
+                   context.stroke();
+                   context.beginPath();
+                   context.moveTo(xBase2+40*i, yBase2+40*graphY/2+30);
+                   context.lineTo(xBase2+40*i, yBase2+40*graphY);
+                   context.stroke();
+                   context.font = '14pt Calibri';
+                   context.fillStyle = 'black';
+                   context.textAlign = 'center';
+                   context.textBaseline = 'middle';
+                   axisValue = xIncrement*(i-5);
+                   axisLabel = axisValue.toFixed(0);
+                   if (i>0) context.fillText(axisLabel, xBase2+40*i, yBase2+40*graphY/2+20);
+                  }
+        
+                 // horizontal grid lines
+                 for (i = 0; i <= graphY; i++) {
+                   context.beginPath();
+                   context.moveTo(xBase2-10, yBase2+40*i);
+                   context.lineTo(xBase2+40*graphX, yBase2+40*i);
+                   context.stroke();
+                   context.font = '14pt Calibri';
+                   context.fillStyle = 'black';
+                   context.textAlign = 'center';
+                   context.textBaseline = 'middle';
+                   axisValue = yIncrement*(3-i);
+                   axisLabel = axisValue.toFixed(yNumDecimals);
+                   context.fillText(axisLabel, xBase2-30, yBase2+40*i);
+        
+                  }
+        
+                 // x-axis
+                   context.strokeStyle = '#000';
+                   context.lineWidth = 4;
+                   context.beginPath();
+                   context.moveTo(xBase2-1, yBase2+40*graphY/2);
+                   context.lineTo(xBase2+40*graphX+20, yBase2+40*graphY/2);
+                   context.stroke();
+                   context.moveTo(xBase2+40*graphX+10, yBase2+40*graphY/2-6);
+                   context.lineTo(xBase2+40*graphX+20, yBase2+40*graphY/2);
+                   context.lineTo(xBase2+40*graphX+10, yBase2+40*graphY/2+6);
+                   context.lineJoin = 'miter';
+                   context.stroke();
+                   context.font = '16pt Calibri';
+                   context.fillStyle = 'black';
+                   context.textAlign = 'left';
+                   context.fillText('x (m)', xBase2+40*graphX+24, yBase2+40*graphY/2);
+        
+                 // y-axis
+                   context.strokeStyle = '#000';
+                   context.beginPath();
+                   context.moveTo(xBase2, yBase2-20);
+                   context.lineTo(xBase2, yBase2+40*graphY);
+                   context.stroke();
+                   context.moveTo(xBase2-6, yBase2-10);
+                   context.lineTo(xBase2, yBase2-20);
+                   context.lineTo(xBase2+6, yBase2-10);
+                   context.lineJoin = 'miter';
+                   context.stroke();
+                   context.strokeStyle = '#000';
+                   context.textAlign = 'center';
+                   context.fillText(yAxisTitle, xBase2-45, 22);
+        
+                // draw the source and observer
+        
+                     x1 = xSource + vSource*vSound*time;
+                     if ((x1 >= -50) && (x1 <= 50)) {
+                       context.beginPath();
+                       context.arc(xBase2+40*graphX/2 + x1*4, yBase2+40*graphY/2, 0.8*radius, 0, 2 * Math.PI, false);
+                       context.fillStyle = sourceColor;
+                       context.fill();
+                       context.lineWidth = 2;
+                       context.strokeStyle = '#000000';
+                       context.stroke();
+                      }
+        
+                     x2 = xObserver + vObserver*vSound*time;
+                     if ((x2 >= -50) && (x2 <= 50)) {
+                       context.beginPath();
+                       context.moveTo(xBase2+40*graphX/2 + x2*4,yBase2+40*graphY/2-20);
+                       context.lineTo(xBase2+40*graphX/2 + x2*4,yBase2+40*graphY/2+20);
+                       context.lineWidth = 8;
+                       context.strokeStyle = '#5d5';
+                       context.stroke();
+                      }
+        
+                   if (counter >= maxCount) {
+                     counter = 0;
+                     waveIndex = waveIndex + 1;
+                     wave[waveIndex].x = x1;
+                     wave[waveIndex].t = time;
+                   }
+        
+                   // draw the wavefronts
+                       context.lineWidth = 2;
+                       var redness;
+                       var greenness;
+                       var blueness;
+                       var redString = "ff";
+                       var greenString = "00";
+                       var blueString = "00";
+                       var colorString;
+         //              context.strokeStyle = '#f00';
+        
+                   for (i = 0; i <= waveIndex; i++) {
+                       context.beginPath();
+          //             console.log(i + " " + wave[i].x + " " + wave[i].t + " "+ time);
+                       waveRadius = vSound*(time-wave[i].t);
+                       blueness = Math.floor(16+2.2*waveRadius);
+                       blueString = blueness.toString(16);
+                       greenString = blueString;
+                       colorString = "#" + redString+greenString+blueString;
+                       context.strokeStyle  = colorString;
+        
+                       if (waveRadius <= 50) {
+                         context.lineWidth = 2;
+                        }
+                       else context.lineWidth = 2;
+                       context.arc(xBase2+40*graphX/2 + wave[i].x*4, yBase2+40*graphY/2, 4*waveRadius, 0, 2 * Math.PI, false);
+                       context.stroke();
+                   }
+        
+                   waveRadius = vSound*(time-wave[0].t);
+                   if (waveRadius > maxRadius) {
+                     for (i = 0; i < waveIndex; i++) {
+                       wave[i].x = wave[i+1].x;
+                       wave[i].t = wave[i+1].t;
+                     }
+                     waveIndex = waveIndex - 1;
+                   }
+        
+                // make sure waves don't wash over the title
+                   context.fillStyle = "#ffd";
+                   context.fillRect(xBase2+40, 0, 40*graphX-80, yBase2-5);
+        
+                   // graph title
+                   context.font = 'bold 18pt Calibri';
+                   context.fillStyle = 'purple';
+                   context.textAlign = 'center';
+                   context.fillText(graphTitle, 0.5*(canvas.width), 20);
+        
+                   context.font = '16pt Calibri';
+                   context.fillStyle = 'black';
+                   context.textAlign = 'left';
+                   context.fillText("f = 100 Hz", xBase2+40*graphX+20,yBase2);
+        
+                   var foLabel = 'fo = ';
+                   var fo = 100.0;
+                   var divideByZeroFlag = 0;
+        
+                   if (((x1 <= x2) && (vObserver < 0.0)) || ((x1 > x2) && (vObserver > 0.0))) {
+                     fo = fo*(1+Math.abs(vObserver));
+                   }
+                   else fo = fo*(1-Math.abs(vObserver));
+        
+                   if (((x1 <= x2) && (vSource > 0.0)) || ((x1 > x2) && (vSource < 0.0))) {
+                     if ( Math.abs(vSource) != 1.0) {
+                      fo = fo/(1-Math.abs(vSource));
+                     }
+                     else divideByZeroFlag = 1;
+                   }
+                   else fo = fo/(1+Math.abs(vSource));
+        
+                   if (divideByZeroFlag == 1) {
+                     foLabel = foLabel + "??";
+                   }
+                   else foLabel = foLabel + fo.toFixed(0) + ' Hz';
+                   context.textAlign = 'left';
+                   context.fillText(foLabel, xBase2+40*graphX+20,yBase2+30);
+        
+        
+              }
+            }
+        
+            function runMotion() {
+                drawMotion();
+                if (runFlag == 1) {
+                  timer = window.setTimeout(runMotion, 1000/30);
+                }
+              }
+        
+          </script>
+        </p></body>
+</html>
