@@ -14,3 +14,60 @@ button{
     border: 2px dashed;
     background-color: white;
 }
+
+.gif{
+    margin:0;
+}
+
+.sim{
+    border: dashed #0c4dc7;
+    width: 850px;
+    height: 500px;
+}
+
+.useful{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: dashed #0c4dc7 thick;
+}
+
+.header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    flex-wrap: wrap;
+}
+h1{
+    font-family: "Copperplate", fantasy;
+    color: #0c4dc7;
+}
+.reference{
+    font-family: "Copperplate", fantasy;
+    color: #0c4dc7;
+    margin-right: 15px;
+    margin-left: 0;
+}
+.fa fa home{
+    margin-left: 15px;
+    margin-right: 0;
+    size: 50px;
+}
+
+.content{
+display: flex;
+flex-direction: column;
+}
+.one{
+    display: flex;
+    align-items: baseline;
+    padding-left: 15px;
+}
+
+.parag{
+    width: fit-content;
+}
+.horizontal{
+    display: flex;
+}
